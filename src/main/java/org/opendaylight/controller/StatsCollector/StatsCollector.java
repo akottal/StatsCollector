@@ -23,6 +23,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.reader.FlowOnNode;
 import org.opendaylight.controller.sal.reader.NodeConnectorStatistics;
+import org.opendaylight.controller.sal.reader.IReadService;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
@@ -37,6 +38,7 @@ public class StatsCollector {
             .getLogger(StatsCollector.class);
     private ISwitchManager switchManager = null;
     private IOFStatisticsManager ofStatsManager = null;
+    private IReadService readStats = null;
     private OFFeaturesReply offeatures = null;
 
     void init() {
@@ -76,11 +78,15 @@ public class StatsCollector {
 		for(NodeConnector connector : switchManager.getNodeConnectors(node)) {
 			System.out.println("Node Connector: " + connector.toString());
 			System.out.println("Get Node Connector Statistics " + statsManager.getNodeConnectorStatistics(connector).toString());
+			System.out.println("Transmit Rate for this connector: " + readStats.getTransmitRate(connector) + "bps");
+			System.out.println("\n\n\n");
 		}
         }
+/*
 	String s = "0000000496979b9e";
 	long bi = Long.parseLong(s, 16);
         System.out.println("******Get OF Port Statistics: " + ofStatsManager.getOFPortStatistics(bi).toString() + "***********");
 	return;
+*/
     }
 }
