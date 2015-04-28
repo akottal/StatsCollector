@@ -29,6 +29,7 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.openflow.protocol.OFFeaturesReply;
 
 
 public class StatsCollector {
@@ -36,6 +37,7 @@ public class StatsCollector {
             .getLogger(StatsCollector.class);
     private ISwitchManager switchManager = null;
     private IOFStatisticsManager ofStatsManager = null;
+    private OFFeaturesReply offeatures = null;
 
     void init() {
         logger.info("INIT called!");
