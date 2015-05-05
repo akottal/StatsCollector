@@ -18,7 +18,6 @@
 package org.opendaylight.controller;
 
 import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.protocol_plugin.openflow.IOFStatisticsManager;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.reader.FlowOnNode;
@@ -27,19 +26,19 @@ import org.opendaylight.controller.sal.reader.IReadService;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
+import org.opendaylight.controller.topologymanager.ITopologyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.openflow.protocol.OFFeaturesReply;
-
+import java.util.*;
 
 public class StatsCollector {
     private static final Logger logger = LoggerFactory
             .getLogger(StatsCollector.class);
-    private ISwitchManager switchManager = null;
-    private IOFStatisticsManager ofStatsManager = null;
-    private IReadService readStats = null;
-    private OFFeaturesReply offeatures = null;
+//    private ISwitchManager switchManager = null;
+//    private IReadService readStats = null;
+//    private ITopologyManager topologyManager = null;
+    private Set<NodeConnector> allConnectors = null;
 
     void init() {
         logger.info("INIT called!");
@@ -66,6 +65,12 @@ public class StatsCollector {
         ISwitchManager switchManager = (ISwitchManager) ServiceHelper
                 .getInstance(ISwitchManager.class, containerName, this);
 
+	ITopologyManager topologyManager = (ITopologyManager) ServiceHelper
+                .getInstance(ITopologyManager.class, containerName, this);
+
+	IReadService readStats = (IReadService) ServiceHelper
+		.getInstance(IReadService.class, containerName, this);
+
         for (Node node : switchManager.getNodes()) {
             System.out.println("\n\nNode: " + node);
             for (FlowOnNode flow : statsManager.getFlows(node)) {
@@ -75,18 +80,25 @@ public class StatsCollector {
             }
 
 		/* New Code */
-		for(NodeConnector connector : switchManager.getNodeConnectors(node)) {
+		allConnectors = switchManager.getNodeConnectors(node);
+		for(NodeConnector connector : allConnectors) {
 			System.out.println("Node Connector: " + connector.toString());
-			System.out.println("Get Node Connector Statistics " + statsManager.getNodeConnectorStatistics(connector).toString());
+			if(topologyManager.getHostsAttachedToNodeConnector(connector) != null)
+				System.out.println("getHostsAttachedtoNodeConnector: " + topologyManager.getHostsAttachedToNodeConnector(connector).toString());
+			if(statsManager.getNodeConnectorStatistics(connector) != null)
+				System.out.println("Get Node Connector Statistics " + statsManager.getNodeConnectorStatistics(connector).toString());
 			System.out.println("Transmit Rate for this connector: " + readStats.getTransmitRate(connector) + "bps");
 			System.out.println("\n\n\n");
 		}
         }
-/*
-	String s = "0000000496979b9e";
-	long bi = Long.parseLong(s, 16);
-        System.out.println("******Get OF Port Statistics: " + ofStatsManager.getOFPortStatistics(bi).toString() + "***********");
-	return;
-*/
+
+	if(topologyManager.getEdges() != null)
+		System.out.println("getEdges: " + topologyManager.getEdges().toString());
+	if(topologyManager.getNodeConnectorWithHost() != null)
+		System.out.println("getNodeConnectorWithHost: " + topologyManager.getNodeConnectorWithHost().toString());
+	if(topologyManager.getNodeEdges() != null)
+		System.out.println("getNodeEdges: " + topologyManager.getNodeEdges().toString());
+	if(topologyManager.getNodesWithNodeConnectorHost() != null)
+		System.out.println("getNodesWithNodeConnectorHost: " + topologyManager.getNodesWithNodeConnectorHost().toString());
     }
 }

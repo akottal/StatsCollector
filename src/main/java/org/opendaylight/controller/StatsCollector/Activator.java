@@ -73,11 +73,9 @@ public class Activator extends ComponentActivatorAbstractBase {
     public void configureInstance(Component c, Object imp, String containerName) {
         if (imp.equals(StatsCollector.class)) {
             // export the services
-            Dictionary<String, String> props = new Hashtable<String, String>();
-            props.put("salListenerName", "tutorial_L2_forwarding");
-            c.setInterface(new String[] { IListenDataPacket.class.getName() }, props);
+            c.setInterface(new String[] { StatsCollector.class.getName() }, null);
 
-            // register dependent modules
+/*
             c.add(createContainerServiceDependency(containerName).setService(
                     ISwitchManager.class).setCallbacks("setSwitchManager",
                     "unsetSwitchManager").setRequired(true));
@@ -91,6 +89,7 @@ public class Activator extends ComponentActivatorAbstractBase {
                     IFlowProgrammerService.class).setCallbacks(
                     "setFlowProgrammerService", "unsetFlowProgrammerService")
                     .setRequired(true));
+*/
         }
     }
 }
