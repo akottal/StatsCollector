@@ -29,16 +29,31 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.topologymanager.ITopologyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.oro.text.regex.MalformedPatternException;
 
 import java.util.*;
+import com.jcraft.jsch.*;
+import expect4j.Closure;
+import expect4j.Expect4j;
+import expect4j.ExpectUtils;
+import expect4j.ExpectState;
+import expect4j.matches.Match;
+import expect4j.matches.RegExpMatch;
 
 public class StatsCollector {
+    private static final int COMMAND_EXECUTION_SUCCESS_OPCODE = -2;
+    private static String ENTER_CHARACTER = "\r";
+    private static final int SSH_PORT = 22;
     private static final Logger logger = LoggerFactory
             .getLogger(StatsCollector.class);
-//    private ISwitchManager switchManager = null;
-//    private IReadService readStats = null;
-//    private ITopologyManager topologyManager = null;
     private Set<NodeConnector> allConnectors = null;
+    private String userName = "admin";
+    private String password = "";
+    private String host = "";
+    private Expect4j expect = null;
+    List<String> lstCmds = new ArrayList<String>();
+    StringBuilder buffer = new StringBuilder();
+
 
     void init() {
         logger.info("INIT called!");
@@ -56,6 +71,94 @@ public class StatsCollector {
     void stop() {
         logger.info("STOP called!");
     }
+
+    public Expect4j SSH() throws Exception {
+        JSch jsch = new JSch();
+        Session session = jsch.getSession(userName, host, 22);
+        if (password != null) {
+            session.setPassword(password);
+        }
+        Hashtable<String,String> config = new Hashtable<String,String>();
+        config.put("StrictHostKeyChecking", "no");
+        session.setConfig(config);
+        session.connect(60000);
+        ChannelShell channel = (ChannelShell) session.openChannel("shell");
+        Expect4j expect = new Expect4j(channel.getInputStream(), channel.getOutputStream());
+        channel.connect();
+        return expect;
+    }
+
+    private boolean checkResult(int intRetVal) {
+        if (intRetVal == COMMAND_EXECUTION_SUCCESS_OPCODE) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isSuccess(List<Match> objPattern, String strCommandPattern) {
+        try {
+            boolean isFailed = checkResult(expect.expect(objPattern));
+ 
+            if (!isFailed) {
+                expect.send(strCommandPattern);
+                expect.send(ENTER_CHARACTER);
+                return true;
+            }
+            return false;
+        } catch (MalformedPatternException ex) {
+            ex.printStackTrace();
+            return false;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    public String execute(List<String> cmdsToExecute) {
+
+	lstCmds = cmdsToExecute;
+ 
+        Closure closure = new Closure() {
+            public void run(ExpectState expectState) throws Exception {
+                buffer.append(expectState.getBuffer());
+            }
+        };
+
+        List<Match> lstPattern =  new ArrayList<Match>();
+	String[] linuxPromptRegEx = new String[]{"\\>","#"};
+
+        for (String regexElement : linuxPromptRegEx) {
+            try {
+                Match mat = new RegExpMatch(regexElement, closure);
+                lstPattern.add(mat);
+            } catch (MalformedPatternException e) {
+                e.printStackTrace();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+ 
+        try {
+            expect = SSH();
+            boolean isSuccess = true;
+            for(String strCmd : lstCmds) {
+                isSuccess = isSuccess(lstPattern,strCmd);
+                if (!isSuccess) {
+                    isSuccess = isSuccess(lstPattern,strCmd);
+                }
+            }
+ 
+            checkResult(expect.expect(lstPattern));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (expect!=null) {
+            	expect.close();
+	    }
+        }
+        return buffer.toString();
+    }
+
 
     void getFlowStatistics() {
         String containerName = "default";
@@ -82,13 +185,15 @@ public class StatsCollector {
 		/* New Code */
 		allConnectors = switchManager.getNodeConnectors(node);
 		for(NodeConnector connector : allConnectors) {
-			System.out.println("Node Connector: " + connector.toString());
-			if(topologyManager.getHostsAttachedToNodeConnector(connector) != null)
-				System.out.println("getHostsAttachedtoNodeConnector: " + topologyManager.getHostsAttachedToNodeConnector(connector).toString());
-			if(statsManager.getNodeConnectorStatistics(connector) != null)
-				System.out.println("Get Node Connector Statistics " + statsManager.getNodeConnectorStatistics(connector).toString());
-			System.out.println("Transmit Rate for this connector: " + readStats.getTransmitRate(connector) + "bps");
-			System.out.println("\n\n\n");
+			if(readStats.getTransmitRate(connector) > 0) {
+				System.out.println("Node Connector: " + connector.toString());
+				if(topologyManager.getHostsAttachedToNodeConnector(connector) != null)
+					System.out.println("getHostsAttachedtoNodeConnector: " + topologyManager.getHostsAttachedToNodeConnector(connector).toString());
+				if(statsManager.getNodeConnectorStatistics(connector) != null)
+					System.out.println("Get Node Connector Statistics " + statsManager.getNodeConnectorStatistics(connector).toString());
+				System.out.println("Transmit Rate for this connector: " + readStats.getTransmitRate(connector) + "bps");
+				System.out.println("\n");
+			}
 		}
         }
 
@@ -100,5 +205,12 @@ public class StatsCollector {
 		System.out.println("getNodeEdges: " + topologyManager.getNodeEdges().toString());
 	if(topologyManager.getNodesWithNodeConnectorHost() != null)
 		System.out.println("getNodesWithNodeConnectorHost: " + topologyManager.getNodesWithNodeConnectorHost().toString());
+	
+	List<String> cmdsToExecute = new ArrayList<String>();
+        cmdsToExecute.add("ls");
+        cmdsToExecute.add("pwd");
+        cmdsToExecute.add("mkdir testdir");
+        String outputLog = execute(cmdsToExecute);
+        System.out.println(outputLog);
     }
 }
