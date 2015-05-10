@@ -16,30 +16,18 @@
 				<extensions>true</extensions>
 				<configuration>
 					<instructions>
-						<Import-Package>
-							org.opendaylight.controller.statisticsmanager,
-							org.opendaylight.controller.sal.core,
-							org.opendaylight.controller.sal.reader,
-							org.opendaylight.controller.sal.utils,
-							org.opendaylight.controller.sal.packet,
-							org.opendaylight.controller.sal.match,
-							org.opendaylight.controller.sal.action,
-							org.opendaylight.controller.sal.flowprogrammer,
-							org.opendaylight.controller.sal.inventory,
-							org.opendaylight.controller.switchmanager,
-							org.opendaylight.controller.topologymanager,
-							org.apache.felix.dm,
-							org.osgi.service.component,
-							org.slf4j,
-							org.eclipse.osgi.framework.console,
-							org.osgi.framework
-						</Import-Package>
 						<Export-Package>
-							org.opendaylight.controller
 						</Export-Package>
 						<Bundle-Activator>
 							org.opendaylight.controller.Activator
+							com.jcraft.impl.Activator
+							com.github.cverges.expect4j.impl.Activator
 						</Bundle-Activator>
+						<Embed-Dependency>
+							jsch,
+							expect4j,
+						</Embed-Dependency>
+						<Embed-Transitive>true</Embed-Transitive> 
 					</instructions>
 					<manifestLocation>${project.basedir}/META-INF</manifestLocation>
 				</configuration>
@@ -47,7 +35,7 @@
 		</plugins>
 	</build>
 
-	<name>EPB Controller</name>
+	<name>StatsCollector</name>
 	<url>http://maven.apache.org</url>
 
 	<properties>
@@ -76,6 +64,18 @@
 			<version>3.8.1</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.jcraft</groupId>
+			<artifactId>jsch</artifactId>
+			<version>0.1.52</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.github.cverges.expect4j</groupId>
+			<artifactId>expect4j</artifactId>
+			<version>1.6</version>
+		</dependency>
+
 	</dependencies>
 
 	<repositories>
